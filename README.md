@@ -3,7 +3,7 @@
 
 The project is split into four different folders which correspond to different variations of the model:
 
-      - standard model: the original model by Lesaint et al. (2014) written and python with a few minor adjustments. This is the version used throughout most of the paper
+      - standard model: the original model by Lesaint et al. (2014) translated into python (original code was in C++) with a few minor adjustments. This is the version used throughout most of the paper
       
       - sequential actions model is a first attempt to explain why in the short ITI condition, animals switch from goal-tracking to sign-tracking. To study this, I allowed agents in state 1, when the lever appears, to take two different actions before changing state. The result was that switching from sign-tracking to goal tracking is possible but not the opposite, as it is disadvantageous from a MB point of view.
       
