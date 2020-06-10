@@ -1,90 +1,83 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jan 25 16:51:38 2018
+Created on Tue Jun  9 16:23:20 2020
 
-@author: cinotti
+@author: franc
 """
 
+
 import numpy as np
-#from TaskVariables import SxA_F, SxA_S, SxA_R, n_states
+from TaskVariables import StatexAction_to_Feature, StatexAction_to_State, StatexAction_to_Reward, state7
 
-def LastState(n_states):
-    return n_states - 1
+def Feature(State, Action):
+    """ returns feature for a given state and action """
+    return int(StatexAction_to_Feature[State, Action])
 
-def Feature(SxA_F, state,action):
-    # returns feature for a given state and action
-    return int(SxA_F[state, action])
-
-def PossibleFeatures(SxA_F, state):
-    # returns the possible features corresponding to a given state
-    f = SxA_F[state, :]
+def PossibleFeatures(State):
+    """ returns the possible features corresponding to a given state """
+    f = StatexAction_to_Feature[State, :]
     f = f[~np.isnan(f)]
     return f.astype(int)
 
-def NextState(SxA_S, state, action):
-    # returns next state for a given action * state
-    return int(SxA_S[state, action])
+def NextState(State, Action):
+    """ returns next state for a given action * state """
+    return int(StatexAction_to_State[State, Action])
 
-def PossibleActions(SxA_S, state):
-    # returns the possible actions in a given state
-    f = SxA_S[state, :]
+def PossibleActions(State):
+    """ returns the possible actions in a given state """
+    f = StatexAction_to_State[State, :]
     actions = np.argwhere(~np.isnan(f))
     return actions
 
-def FMF_component(SxA_R, SxA_F, SxA_S, state, action, V, alpha, gamma, flupenthixol):
-    n_states = np.size(SxA_R,0)
-    c = Feature(SxA_F, state, action)
-    r = SxA_R[state, action]
-    if state != LastState(n_states):
-        next_features = PossibleFeatures(SxA_F, NextState(SxA_S, state, action))
-        delta = r + gamma * max(V[next_features]) - V[c]
+def FMF_component(State, Action, Value, Parameters):
+    """ given a (state, action) pair, computes Feature-Model_Free update of 
+    the value function V, and returns the updated values and the RPE, or 
+    dopaminergic signal """
+    c = Feature(State, Action)
+    r = StatexAction_to_Reward[State, Action]
+    if State != state7:
+        next_features = PossibleFeatures(NextState(State, Action))
+        delta = r + Parameters.gamma * max(Value[next_features]) - Value[c]
+        Value[c] = Value[c] + Parameters.alpha * delta
     else :
-        delta = r - V[c]
-        
-    # inhibition by flupenthixol
-    if delta != 0:
-        if (delta - flupenthixol) / delta >= 0:
-            delta -= flupenthixol
-        else :
-            delta = 0    
-    V[c] = V[c] + alpha * delta
-#    
-#    if state == LastState(n_states):
-#        delta = r - V[2]
+        # we compute an RPE for comparison with dopamine signal, but do not update the value of food which is supposed constant
+        delta = r - Value[c]
     
-    return {'Value' : V, 'DA' : delta}
+    return {'Value' : Value, 'DA' : delta}
 
 
-def MB_component(SxA_R, SxA_F, SxA_S, state, action, Q, T, R, alpha, gamma):
-    n_states = np.size(SxA_R,0)
-    r = SxA_R[state, action]
-    R[state, action] = R[state, action] + alpha * (r - R[state, action])
-    if state != LastState(n_states): # task is episodic, transition from last state to state 0 must be treated differently
-        next_state = NextState(SxA_S, state, action)
-        T[state, action, :] = (1 - alpha) * T[state, action, :]
-        T[state, action, next_state] += alpha
-        maxQ = np.amax(Q, axis = 1)
-        Q[state, action] = R[state, action] + gamma * np.dot(T[state, action, :], maxQ)
+def MB_component(State, Action, Estimates, Parameters):
+    """ given a (state, action) pair, computes the model-based updates of the 
+    Q-function, transition function and reward function which it returns """
+    r = StatexAction_to_Reward[State, Action]
+    Estimates.R[State, Action] = Estimates.R[State, Action] + Parameters.alpha * (r - Estimates.R[State, Action])
+    if State != state7: # task is episodic, transition from last state to state 0 must be treated differently
+        next_state = NextState(State, Action)
+        Estimates.T[State, Action, :] = (1 - Parameters.alpha) * Estimates.T[State, Action, :]
+        Estimates.T[State, Action, next_state] += Parameters.alpha
+        maxQ = np.amax(Estimates.Q, axis = 1)
+        Estimates.Q[State, Action] = Estimates.R[State, Action] + Parameters.gamma * np.dot(Estimates.T[State, Action, :], maxQ)
     else :
-        Q[state, action] = R[state, action]
+        Estimates.Q[State, Action] = Estimates.R[State, Action]
     
-    return {'Transition function': T, 'MB reward function' : R, 'Qvalues': Q}
+    return Estimates
 
 
-def ActionDistribution(SxA_S, SxA_F, state, omega, alpha, gamma, Q, T, R, V, beta, flupenthixol, injection):
-    actions = PossibleActions(SxA_S, state)
+def ActionDistribution(State, Parameters, Estimates):
+    """ combines the outcomes of the FMF and MB modules to determine the 
+    combined P-value of each possible action, as well as its probability of 
+    selection and randomly selects an action based on these probabilities """
+    actions = PossibleActions(State)
     n_possibleactions = len(actions)
     P = np.zeros(n_possibleactions)
     for index, action in enumerate(actions):
-        c = Feature(SxA_F, state, action)
-        Advantage = Q[state, action] - max(Q[state, :])
-        P[index] = (1 - omega) * Advantage + omega * V[c]
+        c = Feature(State, action)
+        Advantage = Estimates.Q[State, action] - max(Estimates.Q[State, :])
+        P[index] = (1 - Parameters.omega) * Advantage + Parameters.omega * Estimates.V[c]
         
     distribution = np.zeros(n_possibleactions)
-    if injection == 'systemic':
-        beta = beta / (1 - flupenthixol)
     for i in range(n_possibleactions):
-        distribution[i] = np.exp(P[i] / beta) / sum(np.exp(P[:] / beta))
+        distribution[i] = np.exp(P[i] / Parameters.beta) / sum(np.exp(P[:] / Parameters.beta))
     j = np.random.choice(n_possibleactions, 1, p=distribution)
     choice = actions[j]
     return {'Action probabilities':distribution, 'Choice': choice, 'Pvalues': P}
