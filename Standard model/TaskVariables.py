@@ -25,13 +25,13 @@ state6 = 6
 state7 = 7
 n_states = 8
 
-#actions
+# actions
 
-goE = 0
+wait = 0
 goL = 1
 goM = 2
-eng = 3
-wait = 4
+goE = 3
+eng = 4
 eat = 5
 n_actions = 6
 
@@ -45,21 +45,21 @@ n_features = 4
 
 # mapping of state x action to features
 
-StatexAction_to_Feature = np.array([[N, a, a, a, a, a],
-                  [N, L, M, a, a, a],
-                  [a, a, a, L, a, a],
-                  [a, a, a, a, N, a],
-                  [a, a, a, M, a, a],
+StatexAction_to_Feature = np.array([[a, a, a, N, a, a],
+                  [a, L, M, N, a, a],
+                  [a, a, a, a, L, a],
+                  [N, a, a, a, a, a],
+                  [a, a, a, a, M, a],
                   [a, a, F, a, a, a],
                   [a, a, F, a, a, a],
                   [a, a, a, a, a, M]])
 
 # mapping of state x action to next state
-StatexAction_to_State = np.array([[state1,  a,  a,  a,  a,  a], 
-                  [state3, state2, state4,  a,  a,  a], 
-                  [ a,  a,  a, state5,  a,  a],
-                  [ a,  a,  a,  a, state6,  a],
-                  [ a,  a,  a, state7,  a,  a],
+StatexAction_to_State = np.array([[a,  a,  a,  state1,  a,  a], 
+                  [a, state2, state4,  state3,  a,  a], 
+                  [ a,  a,  a, a,  state5,  a],
+                  [ state6,  a,  a,  a, a,  a],
+                  [ a,  a,  a, a,  state7,  a],
                   [ a,  a, state7,  a,  a,  a],
                   [ a,  a, state7,  a,  a,  a], 
                   [ a,  a,  a,  a,  a, state0]])

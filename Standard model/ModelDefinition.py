@@ -7,7 +7,7 @@ Created on Tue Jun  9 16:23:20 2020
 
 
 import numpy as np
-from TaskVariables import StatexAction_to_Feature, StatexAction_to_State, StatexAction_to_Reward, state7
+from TaskVariables import StatexAction_to_Feature, StatexAction_to_State, StatexAction_to_Reward, state7, n_actions
 
 def Feature(State, Action):
     """ returns feature for a given state and action """
@@ -80,4 +80,4 @@ def ActionDistribution(State, Parameters, Estimates):
         distribution[i] = np.exp(P[i] / Parameters.beta) / sum(np.exp(P[:] / Parameters.beta))
     j = np.random.choice(n_possibleactions, 1, p=distribution)
     choice = actions[j]
-    return {'Action probabilities':distribution, 'Choice': choice, 'Pvalues': P}
+    return {'Action probabilities': distribution, 'Choice': choice, 'Pvalues': P}
