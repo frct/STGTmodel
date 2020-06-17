@@ -27,7 +27,7 @@ def SingleTrial(State1_Action, Parameters, Estimates):
             likelihood = Distribution[action-1]
         else :
             action = PossibleActions(state)
-        print('State:' + str(state) + ', Action:' + str(action))
+        #print('State:' + str(state) + ', Action:' + str(action))
         FMFResults = FMF_component(state, action, Estimates.V, Parameters)
         Estimates.V = FMFResults['Value']
         ModelBasedResults = MB_component(state, action,Estimates, Parameters)
@@ -101,5 +101,5 @@ for index, rat in enumerate(rats):
     rat_data = data[b,3]
     
     
-    result = optimize.minimize_scalar(OptimizeOmega, bounds=(0,1))
+    result = optimize.minimize_scalar(OptimizeOmega, bounds=(0,1), method='bounded')
     omegas[index] = result.x
