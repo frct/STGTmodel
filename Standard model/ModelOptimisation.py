@@ -95,11 +95,17 @@ rats = np.unique(data[:,0])
 n_rats = len(rats)
 
 omegas = np.zeros((n_rats))
+negLL = np.zeros((n_rats))
+LL0 = np.zeros((n_rats))
 
 for index, rat in enumerate(rats):
     b = data[:,0] == rat
     rat_data = data[b,3]
-    
-    
+    n_trials = len(rat_data)
+    x0 = [0.1]
+    bnds = ((0,1),(0,1))
+    #result = optimize.minimize(OptimizeOmega, x0)
     result = optimize.minimize_scalar(OptimizeOmega, bounds=(0,1), method='bounded')
+    negLL[index] = result.fun
     omegas[index] = result.x
+    LL0[index] = n_trials * np.log(1/3) * -1
