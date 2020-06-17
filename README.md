@@ -6,3 +6,4 @@ The project is made up of three scripts:
 - TaskVariables which defines the different possible states, actions, features and state-action transitions, etc.
 - ModelDefinition with the model-free and model-based learning modules
 - ModelOptimisation which given the experimental data, finds an optimal value of omega to minimize the negative log-likelihood
+(-ModelSimulation which given an optimised set of parameters will generate new behaviour for comparison with the experimental results)
