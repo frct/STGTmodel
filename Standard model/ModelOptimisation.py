@@ -7,7 +7,7 @@ Created on Mon Jun  8 15:56:01 2020
 
 import numpy as np
 from scipy import optimize
-from TaskVariables import state0, state1, state7, N, M, F, n_features, n_states, \
+from TaskVariables import state0, state1, state7, N, M, L, F, n_features, n_states, \
 n_actions, goE, goM
 from ModelDefinition import ActionDistribution, PossibleActions, FMF_component, \
 MB_component, NextState
@@ -39,14 +39,17 @@ def SingleTrial(State1_Action, Parameters, Estimates):
     else:
         # intertrial devaluation of magazine
         action = PossibleActions(state)
+        
         FMFResults = FMF_component(state, action, Estimates.V, Parameters)
         Estimates.V = FMFResults['Value']
         ModelBasedResults =  MB_component(state, action, Estimates, Parameters)
         Estimates.Q = ModelBasedResults.Q
         Estimates.T = ModelBasedResults.T
-        Estimates.R = ModelBasedResults.R  
+        Estimates.R = ModelBasedResults.R
         Estimates.V[N] = (1 - Parameters.u_iti) * Estimates.V[N]
+        print('lever value:' + str(Estimates.V[L]))
         Estimates.V[M] = (1 - Parameters.u_iti) * Estimates.V[M]
+        print('food cup value:' + str(Estimates.V[M]))
     return {'likelihood': likelihood, 'Estimates': Estimates}
 
     
@@ -74,6 +77,7 @@ def OptimizeOmega(omega):
 
     InitialEstimates = structure()
     InitialEstimates.V = np.zeros((n_features))
+    InitialEstimates.V[F] = 1
     
     InitialEstimates.Q = np.zeros((n_states, n_actions))
     InitialEstimates.Q[state1,goE] = 0.5
@@ -85,7 +89,27 @@ def OptimizeOmega(omega):
     
     return negative_LogLikelihood
 
+def OptimizeParameters(x):
+    Parameters = structure()
+    Parameters.alpha = x[0]
+    Parameters.beta = x[1]
+    Parameters.gamma = x[2]
+    Parameters.u_iti = x[3]
+    Parameters.omega = x[4]
+    
+    InitialEstimates = structure()
+    InitialEstimates.V = np.zeros((n_features))
+    InitialEstimates.V[F] = 1
+    
+    InitialEstimates.Q = np.zeros((n_states, n_actions))
+    InitialEstimates.Q[state1,goE] = 0.5
+    InitialEstimates.Q[state1, goM] = 0.5
+    InitialEstimates.T = np.zeros((n_states, n_actions, n_states))
+    InitialEstimates.R = np.zeros((n_states, n_actions))
 
+    negative_LogLikelihood = -1 * LogLikelihood(rat_data, InitialEstimates, Parameters)
+    
+    return negative_LogLikelihood
 
 import scipy.io
 mat = scipy.io.loadmat('Compiled_STGT_model_data.mat')
@@ -96,16 +120,25 @@ n_rats = len(rats)
 
 omegas = np.zeros((n_rats))
 negLL = np.zeros((n_rats))
-LL0 = np.zeros((n_rats))
+avgLikelihood = np.zeros((n_rats))
+params = np.zeros((n_rats, 5))
 
 for index, rat in enumerate(rats):
     b = data[:,0] == rat
     rat_data = data[b,3]
     n_trials = len(rat_data)
+    
     x0 = [0.1]
     bnds = ((0,1),(0,1))
     #result = optimize.minimize(OptimizeOmega, x0)
     result = optimize.minimize_scalar(OptimizeOmega, bounds=(0,1), method='bounded')
     negLL[index] = result.fun
     omegas[index] = result.x
-    LL0[index] = n_trials * np.log(1/3) * -1
+    avgLikelihood[index] = np.exp(-1*negLL[index] / n_trials)
+    
+    '''x0 = np.array([0.2, 0.09, 0.8,0.2,0.5])
+    bnds = ((0,1), (0.001, 1), (0,1), (0,1), (0,1))
+    result = optimize.minimize(OptimizeParameters, x0, bounds=bnds)
+    negLL[index] = result.fun
+    avgLikelihood[index] = np.exp(-1*negLL[index] / n_trials)
+    params[index,:] = result.x'''
