@@ -52,7 +52,7 @@ StatexAction_to_Feature = np.array([[a, a, a, N, a, a],
                   [a, a, a, a, M, a],
                   [a, a, F, a, a, a],
                   [a, a, F, a, a, a],
-                  [a, a, a, a, a, M]])
+                  [a, a, a, a, a, F]])
 
 # mapping of state x action to next state
 StatexAction_to_State = np.array([[a,  a,  a,  state1,  a,  a], 

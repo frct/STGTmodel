@@ -27,7 +27,6 @@ def SingleTrial(State1_Action, Parameters, Estimates):
             likelihood = Distribution[action-1]
         else :
             action = PossibleActions(state)
-        #print('State:' + str(state) + ', Action:' + str(action))
         FMFResults = FMF_component(state, action, Estimates.V, Parameters)
         Estimates.V = FMFResults['Value']
         ModelBasedResults = MB_component(state, action,Estimates, Parameters)
@@ -46,10 +45,10 @@ def SingleTrial(State1_Action, Parameters, Estimates):
         Estimates.Q = ModelBasedResults.Q
         Estimates.T = ModelBasedResults.T
         Estimates.R = ModelBasedResults.R
+        #print('values before:' + str(Estimates.V))
         Estimates.V[N] = (1 - Parameters.u_iti) * Estimates.V[N]
-        print('lever value:' + str(Estimates.V[L]))
         Estimates.V[M] = (1 - Parameters.u_iti) * Estimates.V[M]
-        print('food cup value:' + str(Estimates.V[M]))
+        #print('values after:' + str(Estimates.V))
     return {'likelihood': likelihood, 'Estimates': Estimates}
 
     
@@ -128,17 +127,17 @@ for index, rat in enumerate(rats):
     rat_data = data[b,3]
     n_trials = len(rat_data)
     
-    x0 = [0.1]
+    '''x0 = [0.1]
     bnds = ((0,1),(0,1))
     #result = optimize.minimize(OptimizeOmega, x0)
     result = optimize.minimize_scalar(OptimizeOmega, bounds=(0,1), method='bounded')
     negLL[index] = result.fun
     omegas[index] = result.x
-    avgLikelihood[index] = np.exp(-1*negLL[index] / n_trials)
+    avgLikelihood[index] = np.exp(-1*negLL[index] / n_trials)'''
     
-    '''x0 = np.array([0.2, 0.09, 0.8,0.2,0.5])
+    x0 = np.array([0.2, 0.09, 0.8,0.2,0.5])
     bnds = ((0,1), (0.001, 1), (0,1), (0,1), (0,1))
     result = optimize.minimize(OptimizeParameters, x0, bounds=bnds)
     negLL[index] = result.fun
     avgLikelihood[index] = np.exp(-1*negLL[index] / n_trials)
-    params[index,:] = result.x'''
+    params[index,:] = result.x

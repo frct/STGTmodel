@@ -7,7 +7,7 @@ Created on Tue Jun  9 16:23:20 2020
 
 
 import numpy as np
-from TaskVariables import StatexAction_to_Feature, StatexAction_to_State, StatexAction_to_Reward, state7, n_actions
+from TaskVariables import StatexAction_to_Feature, StatexAction_to_State, StatexAction_to_Reward, state7, state1, n_actions, F
 
 def Feature(State, Action):
     """ returns feature for a given state and action """
@@ -35,14 +35,14 @@ def FMF_component(State, Action, Value, Parameters):
     dopaminergic signal """
     c = Feature(State, Action)
     r = StatexAction_to_Reward[State, Action]
-    if State != state7:
+    if State != state7 and State != state1 :
         next_features = PossibleFeatures(NextState(State, Action))
         delta = r + Parameters.gamma * max(Value[next_features]) - Value[c]
         Value[c] = Value[c] + Parameters.alpha * delta
     else :
         # we compute an RPE for comparison with dopamine signal, but do not update the value of food which is supposed constant
         delta = r - Value[c]
-    
+    Value[F] = 1
     return {'Value' : Value, 'DA' : delta}
 
 
@@ -59,7 +59,7 @@ def MB_component(State, Action, Estimates, Parameters):
         Estimates.Q[State, Action] = Estimates.R[State, Action] + Parameters.gamma * np.dot(Estimates.T[State, Action, :], maxQ)
     else :
         Estimates.Q[State, Action] = Estimates.R[State, Action]
-    
+    #print('Estimates' +str(Estimates.Q))
     return Estimates
 
 
@@ -78,6 +78,9 @@ def ActionDistribution(State, Parameters, Estimates):
     distribution = np.zeros(n_possibleactions)
     for i in range(n_possibleactions):
         distribution[i] = np.exp(P[i] / Parameters.beta) / sum(np.exp(P[:] / Parameters.beta))
+        
+    print('Distrubution:' +str(distribution))
+    print('Sum:' + str(np.sum(distribution)))
     j = np.random.choice(n_possibleactions, 1, p=distribution)
     choice = actions[j]
     return {'Action probabilities': distribution, 'Choice': choice, 'Pvalues': P}
