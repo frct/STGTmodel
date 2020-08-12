@@ -76,11 +76,13 @@ def ActionDistribution(State, Parameters, Estimates):
         P[index] = (1 - Parameters.omega) * Advantage + Parameters.omega * Estimates.V[c]
         
     distribution = np.zeros(n_possibleactions)
+    #print('P' + str(P))
     for i in range(n_possibleactions):
-        distribution[i] = np.exp(P[i] / Parameters.beta) / sum(np.exp(P[:] / Parameters.beta))
+        distribution[i] = np.exp(P[i] * Parameters.beta) / sum(np.exp(P[:] * Parameters.beta))
+        #print('numerator' + str(np.exp(P[i] * Parameters.beta)))
+        #print('denominator' + str(sum(np.exp(P[:] * Parameters.beta))))
         
-    print('Distrubution:' +str(distribution))
-    print('Sum:' + str(np.sum(distribution)))
+    #print('Distrubution:' +str(distribution))
     j = np.random.choice(n_possibleactions, 1, p=distribution)
     choice = actions[j]
     return {'Action probabilities': distribution, 'Choice': choice, 'Pvalues': P}

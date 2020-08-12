@@ -135,8 +135,8 @@ for index, rat in enumerate(rats):
     omegas[index] = result.x
     avgLikelihood[index] = np.exp(-1*negLL[index] / n_trials)'''
     
-    x0 = np.array([0.2, 0.09, 0.8,0.2,0.5])
-    bnds = ((0,1), (0.001, 1), (0,1), (0,1), (0,1))
+    x0 = np.array([0.2, 11, 0.5,0.2,0.5]) #inv beta = 0.09
+    bnds = ((0,1), (0.001, 100), (0,1), (0,1), (0,1))
     result = optimize.minimize(OptimizeParameters, x0, bounds=bnds)
     negLL[index] = result.fun
     avgLikelihood[index] = np.exp(-1*negLL[index] / n_trials)
