@@ -110,6 +110,22 @@ def OptimizeParameters(x):
     
     return negative_LogLikelihood
 
+def InitialisationIndices(n_parameters):
+    nx = 3**n_parameters
+
+    I = np.zeros((nx, n_parameters))
+
+    for idy in range(n_parameters): # sweeping through columns
+        idx = 0
+        for n_reps in range(3 ** idy): # each column is made of repeated sequences of groups of 1's 2's 3's. The first colums containts only one repetition, the next 3, the next 9, etc...
+            for a in range(3):
+                for b in range(3**(n_parameters - idy-1)): # size of this repetition
+                    I[idx, idy] = a
+                    idx = idx + 1
+                    
+    return I.astype(int)
+
+
 import scipy.io
 mat = scipy.io.loadmat('Compiled_STGT_model_data.mat')
 data = mat['Compiled_STGT_mdl_data']
@@ -117,15 +133,19 @@ data = mat['Compiled_STGT_mdl_data']
 rats = np.unique(data[:,0])
 n_rats = len(rats)
 
-omegas = np.zeros((n_rats))
-negLL = np.zeros((n_rats))
-avgLikelihood = np.zeros((n_rats))
-params = np.zeros((n_rats, 5))
+
+
+p = np.array([[0.2, 0.5, 0.8], [1, 2, 5], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8]])
+I = InitialisationIndices(5)
 
 for index, rat in enumerate(rats):
     b = data[:,0] == rat
     rat_data = data[b,3]
     n_trials = len(rat_data)
+    
+    negLL = np.zeros((3**5))
+    #avgLikelihood = np.zeros((n_rats))
+    params = np.zeros((3**5, 5))
     
     '''x0 = [0.1]
     bnds = ((0,1),(0,1))
@@ -135,9 +155,16 @@ for index, rat in enumerate(rats):
     omegas[index] = result.x
     avgLikelihood[index] = np.exp(-1*negLL[index] / n_trials)'''
     
-    x0 = np.array([0.2, 11, 0.8, 0.2, 0.5]) #inv beta = 0.09
     bnds = ((0,1), (0.001, 100), (0,1), (0,1), (0,1))
-    result = optimize.minimize(OptimizeParameters, x0, bounds=bnds)
-    negLL[index] = result.fun
-    avgLikelihood[index] = np.exp(-1*negLL[index] / n_trials)
-    params[index,:] = result.x
+    for i in range(3**5):
+        x0 = np.zeros((5))
+        for param in range(5):
+            x0[param] = p[param, I[i, param]]
+        
+        result = optimize.minimize(OptimizeParameters, x0, bounds=bnds)
+        negLL[i] = result.fun
+        #avgLikelihood[i] = np.exp(-1*negLL[index] / n_trials)
+        params[i,:] = result.x
+    #filename = 'Rat' + str(rat) + ' parameters'
+    np.save('Rat' + str(rat) + ' parameters', params )
+    np.save('Rat' + str(rat) + ' negLL', negLL )
