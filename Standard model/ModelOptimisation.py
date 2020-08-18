@@ -90,11 +90,17 @@ def OptimizeOmega(omega):
 
 def OptimizeParameters(x):
     Parameters = structure()
+    # Parameters.alpha = x[0]
+    # Parameters.beta = x[1]
+    # Parameters.gamma = x[2]
+    # Parameters.u_iti = x[3]
+    # Parameters.omega = x[4]
+    
     Parameters.alpha = x[0]
     Parameters.beta = x[1]
-    Parameters.gamma = x[2]
-    Parameters.u_iti = x[3]
-    Parameters.omega = x[4]
+    Parameters.gamma = 1
+    Parameters.u_iti = x[2]
+    Parameters.omega = x[3]
     
     InitialEstimates = structure()
     InitialEstimates.V = np.zeros((n_features))
@@ -135,17 +141,21 @@ n_rats = len(rats)
 
 
 
-p = np.array([[0.2, 0.5, 0.8], [1, 2, 5], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8]])
-I = InitialisationIndices(5)
+#p = np.array([[0.2, 0.5, 0.8], [1, 2, 5], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8]]) # with gamma
+p = np.array([[0.2, 0.5, 0.8], [1, 2, 5], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8]]) # without gamma 
+
+n_parameters = p.shape[0]
+
+I = InitialisationIndices(n_parameters)
 
 for index, rat in enumerate(rats):
     b = data[:,0] == rat
     rat_data = data[b,3]
     n_trials = len(rat_data)
     
-    negLL = np.zeros((3**5))
+    negLL = np.zeros((3**n_parameters))
     #avgLikelihood = np.zeros((n_rats))
-    params = np.zeros((3**5, 5))
+    params = np.zeros((3**n_parameters, n_parameters))
     
     '''x0 = [0.1]
     bnds = ((0,1),(0,1))
@@ -155,10 +165,12 @@ for index, rat in enumerate(rats):
     omegas[index] = result.x
     avgLikelihood[index] = np.exp(-1*negLL[index] / n_trials)'''
     
-    bnds = ((0,1), (0.001, 100), (0,1), (0,1), (0,1))
-    for i in range(3**5):
-        x0 = np.zeros((5))
-        for param in range(5):
+    #bnds = ((0,1), (0.001, 100), (0,1), (0,1), (0,1))
+    bnds = ((0,1), (0.001, 100), (0,1), (0,1))
+    
+    for i in range(3**n_parameters):
+        x0 = np.zeros((n_parameters))
+        for param in range(n_parameters):
             x0[param] = p[param, I[i, param]]
         
         result = optimize.minimize(OptimizeParameters, x0, bounds=bnds)
