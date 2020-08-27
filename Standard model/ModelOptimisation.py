@@ -68,9 +68,10 @@ def LogLikelihood(data, Estimates, Parameters):
 
 def OptimizeOmega(omega):
     Parameters = structure()
-    Parameters.alpha = 0.2
-    Parameters.beta = 0.09
-    Parameters.gamma = 0.8
+    Parameters.alpha_MF = 0.2
+    Parameters.alpha_MB = 0.2
+    Parameters.beta = 4
+    Parameters.gamma = 1
     Parameters.u_iti = 0.2
     Parameters.omega = omega
 
@@ -96,11 +97,25 @@ def OptimizeParameters(x):
     # Parameters.u_iti = x[3]
     # Parameters.omega = x[4]
     
-    Parameters.alpha = x[0]
-    Parameters.beta = x[1]
+    # Parameters.alpha = x[0]
+    # Parameters.beta = x[1]
+    # Parameters.gamma = 1
+    # Parameters.u_iti = x[2]
+    # Parameters.w_MB = x[3]
+    # Parameters.w_MF = x[4]
+    
+    # Parameters.alpha = x[0]
+    # Parameters.w_FMF = x[1]
+    # Parameters.w_MB = x[2]
+    # Parameters.u_iti = x[3]
+    # Parameters.gamma = 1
+    
+    Parameters.alpha_MB = x[0]
+    Parameters.alpha_MF = x[1]
+    Parameters.beta = x[2]
+    Parameters.u_iti = x[3]
+    Parameters.omega = x[4]
     Parameters.gamma = 1
-    Parameters.u_iti = x[2]
-    Parameters.omega = x[3]
     
     InitialEstimates = structure()
     InitialEstimates.V = np.zeros((n_features))
@@ -142,9 +157,14 @@ n_rats = len(rats)
 
 
 #p = np.array([[0.2, 0.5, 0.8], [1, 2, 5], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8]]) # with gamma
-p = np.array([[0.2, 0.5, 0.8], [1, 2, 5], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8]]) # without gamma 
+#p = np.array([[0.2, 0.5, 0.8], [1, 2, 5], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8]]) # without gamma 
+#p = np.array([[0.2, 0.5, 0.8], [1, 2, 5], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8]]) # without gamma but with two weighting parameters
+#p = np.array([[0.2, 0.5, 0.8], [1, 2, 5], [1, 2, 5], [0.2, 0.5, 0.8]]) # without gamma and beta but with two weighting parameters
+#p = np.array([[0.2, 0.5, 0.8], [0.2, 0.5, 0.8], [1, 2, 5], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8]]) # 2 learning rates, beta, u_iti and omega
+p = np.array([0.2, 0.5, 0.8])
 
-n_parameters = p.shape[0]
+n_parameters = 1
+#n_parameters = p.shape[0]
 
 I = InitialisationIndices(n_parameters)
 
@@ -157,26 +177,27 @@ for index, rat in enumerate(rats):
     #avgLikelihood = np.zeros((n_rats))
     params = np.zeros((3**n_parameters, n_parameters))
     
-    '''x0 = [0.1]
-    bnds = ((0,1),(0,1))
+    x0 = [0.1]
     #result = optimize.minimize(OptimizeOmega, x0)
-    result = optimize.minimize_scalar(OptimizeOmega, bounds=(0,1), method='bounded')
-    negLL[index] = result.fun
-    omegas[index] = result.x
-    avgLikelihood[index] = np.exp(-1*negLL[index] / n_trials)'''
+    
     
     #bnds = ((0,1), (0.001, 100), (0,1), (0,1), (0,1))
-    bnds = ((0,1), (0.001, 100), (0,1), (0,1))
+    # bnds = ((0,1), (0,1), (0, 100), (0,1), (0,1))
     
     for i in range(3**n_parameters):
         x0 = np.zeros((n_parameters))
-        for param in range(n_parameters):
-            x0[param] = p[param, I[i, param]]
+        x0 = p[i]
+        # for param in range(n_parameters):
+        #     x0[param] = p[param, I[i, param]]
         
-        result = optimize.minimize(OptimizeParameters, x0, bounds=bnds)
+        result = optimize.minimize_scalar(OptimizeOmega, bounds=(0,1), method='bounded')
         negLL[i] = result.fun
-        #avgLikelihood[i] = np.exp(-1*negLL[index] / n_trials)
-        params[i,:] = result.x
-    #filename = 'Rat' + str(rat) + ' parameters'
+        params[i] = result.x
+        #avgLikelihood[i] = np.exp(-1*negLL[i] / n_trials)
+        
+        # result = optimize.minimize(OptimizeParameters, x0, bounds=bnds)
+        # negLL[i] = result.fun
+        # #avgLikelihood[i] = np.exp(-1*negLL[index] / n_trials)
+        # params[i,:] = result.x
     np.save('Rat' + str(rat) + ' parameters', params )
     np.save('Rat' + str(rat) + ' negLL', negLL )
