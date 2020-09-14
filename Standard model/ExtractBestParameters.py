@@ -8,7 +8,7 @@ Created on Mon Aug 17 16:33:07 2020
 import numpy as np
 
 n_rats = 20
-n_parameters = 1
+n_parameters = 4
 
 best_params = np.zeros([n_rats, n_parameters + 1])
 

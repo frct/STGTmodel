@@ -7,8 +7,8 @@ Created on Mon Jun  8 15:56:01 2020
 
 import numpy as np
 from scipy import optimize
-from TaskVariables import state0, state1, state7, N, M, L, F, n_features, n_states, \
-n_actions, goE, goM
+from TaskVariables import state0, state1, state5, N, M, F, n_features, n_states, \
+n_actions, goM
 from ModelDefinition import ActionDistribution, PossibleActions, FMF_component, \
 MB_component, NextState
 
@@ -18,8 +18,7 @@ class structure:
 
 def SingleTrial(State1_Action, Parameters, Estimates):
     state = state0
-    # Estimates.V[F] = 1 # hypothesis that the value of food does not need to be learnt and is clamped...
-    while state != state7:
+    while state != state5:
         if state == state1:
             action = State1_Action
             IntegrateResults = ActionDistribution(state, Parameters, Estimates)
@@ -27,10 +26,11 @@ def SingleTrial(State1_Action, Parameters, Estimates):
             likelihood = Distribution[action-1]
         else :
             action = PossibleActions(state)
+            
         FMFResults = FMF_component(state, action, Estimates.V, Parameters)
         Estimates.V = FMFResults['Value']
-        ModelBasedResults = MB_component(state, action,Estimates, Parameters)
         
+        ModelBasedResults = MB_component(state, action,Estimates, Parameters)
         Estimates.Q = ModelBasedResults.Q
         Estimates.T = ModelBasedResults.T
                 
@@ -41,14 +41,14 @@ def SingleTrial(State1_Action, Parameters, Estimates):
         
         FMFResults = FMF_component(state, action, Estimates.V, Parameters)
         Estimates.V = FMFResults['Value']
+        Estimates.V[N] = (1 - Parameters.u_iti) * Estimates.V[N]
+        Estimates.V[M] = (1 - Parameters.u_iti) * Estimates.V[M]
+        
         ModelBasedResults =  MB_component(state, action, Estimates, Parameters)
         Estimates.Q = ModelBasedResults.Q
         Estimates.T = ModelBasedResults.T
         Estimates.R = ModelBasedResults.R
-        #print('values before:' + str(Estimates.V))
-        Estimates.V[N] = (1 - Parameters.u_iti) * Estimates.V[N]
-        Estimates.V[M] = (1 - Parameters.u_iti) * Estimates.V[M]
-        #print('values after:' + str(Estimates.V))
+        
     return {'likelihood': likelihood, 'Estimates': Estimates}
 
     
@@ -57,7 +57,7 @@ def LogLikelihood(data, Estimates, Parameters):
     TrialLikelihood = np.zeros((n_trials))
     
     for t in range(n_trials):
-        action = data[t]
+        action = int(data[t])
         TrialUpdates = SingleTrial(action, Parameters, Estimates)
         TrialLikelihood[t] = TrialUpdates['likelihood']
         Estimates = TrialUpdates['Estimates']
@@ -80,8 +80,7 @@ def OptimizeOmega(omega):
     InitialEstimates.V[F] = 1
     
     InitialEstimates.Q = np.zeros((n_states, n_actions))
-    InitialEstimates.Q[state1,goE] = 0.5
-    InitialEstimates.Q[state1, goM] = 0.5
+    #InitialEstimates.Q[state1, goM] = 0.5
     InitialEstimates.T = np.zeros((n_states, n_actions, n_states))
     InitialEstimates.R = np.zeros((n_states, n_actions))
 
@@ -97,12 +96,12 @@ def OptimizeParameters(x):
     # Parameters.u_iti = x[3]
     # Parameters.omega = x[4]
     
-    # Parameters.alpha = x[0]
-    # Parameters.beta = x[1]
-    # Parameters.gamma = 1
-    # Parameters.u_iti = x[2]
-    # Parameters.w_MB = x[3]
-    # Parameters.w_MF = x[4]
+    Parameters.alpha_MB = x[0]
+    Parameters.alpha_MF = x[0]
+    Parameters.beta = x[1]
+    Parameters.gamma = 1
+    Parameters.u_iti = x[2]
+    Parameters.omega = x[3]
     
     # Parameters.alpha = x[0]
     # Parameters.w_FMF = x[1]
@@ -110,20 +109,19 @@ def OptimizeParameters(x):
     # Parameters.u_iti = x[3]
     # Parameters.gamma = 1
     
-    Parameters.alpha_MB = x[0]
-    Parameters.alpha_MF = x[1]
-    Parameters.beta = x[2]
-    Parameters.u_iti = x[3]
-    Parameters.omega = x[4]
-    Parameters.gamma = 1
+    # Parameters.alpha_MB = x[0]
+    # Parameters.alpha_MF = x[1]
+    # Parameters.beta = x[2]
+    # Parameters.u_iti = x[3]
+    # Parameters.omega = x[4]
+    # Parameters.gamma = 1
     
     InitialEstimates = structure()
     InitialEstimates.V = np.zeros((n_features))
     InitialEstimates.V[F] = 1
     
     InitialEstimates.Q = np.zeros((n_states, n_actions))
-    InitialEstimates.Q[state1,goE] = 0.5
-    InitialEstimates.Q[state1, goM] = 0.5
+    #InitialEstimates.Q[state1, goM] = 0.5
     InitialEstimates.T = np.zeros((n_states, n_actions, n_states))
     InitialEstimates.R = np.zeros((n_states, n_actions))
 
@@ -147,9 +145,8 @@ def InitialisationIndices(n_parameters):
     return I.astype(int)
 
 
-import scipy.io
-mat = scipy.io.loadmat('Compiled_STGT_model_data.mat')
-data = mat['Compiled_STGT_mdl_data']
+
+data = np.load('Binary classification of data.npy')
 
 rats = np.unique(data[:,0])
 n_rats = len(rats)
@@ -157,18 +154,19 @@ n_rats = len(rats)
 
 
 #p = np.array([[0.2, 0.5, 0.8], [1, 2, 5], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8]]) # with gamma
-#p = np.array([[0.2, 0.5, 0.8], [1, 2, 5], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8]]) # without gamma 
+p = np.array([[0.05, 0.2, 0.5], [1, 2, 5], [0.05, 0.2, 0.5], [0.2, 0.5, 0.8]]) # without gamma 
 #p = np.array([[0.2, 0.5, 0.8], [1, 2, 5], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8]]) # without gamma but with two weighting parameters
 #p = np.array([[0.2, 0.5, 0.8], [1, 2, 5], [1, 2, 5], [0.2, 0.5, 0.8]]) # without gamma and beta but with two weighting parameters
 #p = np.array([[0.2, 0.5, 0.8], [0.2, 0.5, 0.8], [1, 2, 5], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8]]) # 2 learning rates, beta, u_iti and omega
-p = np.array([0.2, 0.5, 0.8])
+#p = np.array([0.2, 0.5, 0.8])
 
-n_parameters = 1
-#n_parameters = p.shape[0]
+#n_parameters = 1
+n_parameters = p.shape[0]
 
 I = InitialisationIndices(n_parameters)
 
 for index, rat in enumerate(rats):
+    rat = int(rat)
     b = data[:,0] == rat
     rat_data = data[b,3]
     n_trials = len(rat_data)
@@ -181,23 +179,23 @@ for index, rat in enumerate(rats):
     #result = optimize.minimize(OptimizeOmega, x0)
     
     
-    #bnds = ((0,1), (0.001, 100), (0,1), (0,1), (0,1))
+    bnds = ((0,1), (0.001, 100), (0,1), (0,1))
     # bnds = ((0,1), (0,1), (0, 100), (0,1), (0,1))
     
     for i in range(3**n_parameters):
         x0 = np.zeros((n_parameters))
-        x0 = p[i]
-        # for param in range(n_parameters):
-        #     x0[param] = p[param, I[i, param]]
+        # x0 = p[i]
+        for param in range(n_parameters):
+            x0[param] = p[param, I[i, param]]
         
-        result = optimize.minimize_scalar(OptimizeOmega, bounds=(0,1), method='bounded')
-        negLL[i] = result.fun
-        params[i] = result.x
+        # result = optimize.minimize_scalar(OptimizeOmega, bounds=(0,1), method='bounded')
+        # negLL[i] = result.fun
+        # params[i] = result.x
         #avgLikelihood[i] = np.exp(-1*negLL[i] / n_trials)
         
-        # result = optimize.minimize(OptimizeParameters, x0, bounds=bnds)
-        # negLL[i] = result.fun
-        # #avgLikelihood[i] = np.exp(-1*negLL[index] / n_trials)
-        # params[i,:] = result.x
+        result = optimize.minimize(OptimizeParameters, x0, bounds=bnds)
+        negLL[i] = result.fun
+        #avgLikelihood[i] = np.exp(-1*negLL[index] / n_trials)
+        params[i,:] = result.x
     np.save('Rat' + str(rat) + ' parameters', params )
     np.save('Rat' + str(rat) + ' negLL', negLL )
