@@ -38,7 +38,7 @@ def FMF_component(State, Action, Value, Parameters):
     if State != state5 and State != state1 :
         next_features = PossibleFeatures(NextState(State, Action))
         delta = r + Parameters.gamma * max(Value[next_features]) - Value[c]
-        Value[c] = Value[c] + Parameters.alpha_MF * delta
+        Value[c] = Value[c] + Parameters.alpha * delta
     else :
         # we compute an RPE for comparison with dopamine signal, but do not update the value of food which is supposed constant
         delta = r - Value[c]
@@ -50,11 +50,13 @@ def MB_component(State, Action, Estimates, Parameters):
     """ given a (state, action) pair, computes the model-based updates of the 
     Q-function, transition function and reward function which it returns """
     r = StatexAction_to_Reward[State, Action]
-    Estimates.R[State, Action] = Estimates.R[State, Action] + Parameters.alpha_MB * (r - Estimates.R[State, Action])
+    #alpha = 1 / StateActionCount[State, Action]
+    alpha = Parameters.alpha
+    Estimates.R[State, Action] = Estimates.R[State, Action] + alpha * (r - Estimates.R[State, Action])
     if State != state5: # task is episodic, transition from last state to state 0 must be treated differently
         next_state = NextState(State, Action)
-        Estimates.T[State, Action, :] = (1 - Parameters.alpha_MB) * Estimates.T[State, Action, :]
-        Estimates.T[State, Action, next_state] += Parameters.alpha_MB
+        Estimates.T[State, Action, :] = (1 - alpha) * Estimates.T[State, Action, :]
+        Estimates.T[State, Action, next_state] += alpha
         maxQ = np.amax(Estimates.Q, axis = 1)
         Estimates.Q[State, Action] = Estimates.R[State, Action] + Parameters.gamma * np.dot(Estimates.T[State, Action, :], maxQ)
     else :

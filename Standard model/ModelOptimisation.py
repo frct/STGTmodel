@@ -16,7 +16,7 @@ class structure:
     pass
 
 
-def SingleTrial(State1_Action, Parameters, Estimates):
+def SingleTrial(State1_Action, Parameters, Estimates, StateActionCount):
     state = state0
     while state != state5:
         if state == state1:
@@ -26,11 +26,13 @@ def SingleTrial(State1_Action, Parameters, Estimates):
             likelihood = Distribution[action-1]
         else :
             action = PossibleActions(state)
-            
+        
+        StateActionCount[state,action] += 1
+        
         FMFResults = FMF_component(state, action, Estimates.V, Parameters)
         Estimates.V = FMFResults['Value']
         
-        ModelBasedResults = MB_component(state, action,Estimates, Parameters)
+        ModelBasedResults = MB_component(state, action, Estimates, Parameters, StateActionCount)
         Estimates.Q = ModelBasedResults.Q
         Estimates.T = ModelBasedResults.T
                 
@@ -38,29 +40,31 @@ def SingleTrial(State1_Action, Parameters, Estimates):
     else:
         # intertrial devaluation of magazine
         action = PossibleActions(state)
+        StateActionCount[state,action] += 1
         
         FMFResults = FMF_component(state, action, Estimates.V, Parameters)
         Estimates.V = FMFResults['Value']
         Estimates.V[N] = (1 - Parameters.u_iti) * Estimates.V[N]
         Estimates.V[M] = (1 - Parameters.u_iti) * Estimates.V[M]
         
-        ModelBasedResults =  MB_component(state, action, Estimates, Parameters)
+        ModelBasedResults =  MB_component(state, action, Estimates, Parameters, StateActionCount)
         Estimates.Q = ModelBasedResults.Q
         Estimates.T = ModelBasedResults.T
         Estimates.R = ModelBasedResults.R
         
-    return {'likelihood': likelihood, 'Estimates': Estimates}
+    return {'likelihood': likelihood, 'Estimates': Estimates, 'StateActionCount': StateActionCount}
 
     
 def LogLikelihood(data, Estimates, Parameters):
     n_trials = len(data)
     TrialLikelihood = np.zeros((n_trials))
-    
+    StateActionCount = np.zeros((n_states, n_actions))
     for t in range(n_trials):
         action = int(data[t])
-        TrialUpdates = SingleTrial(action, Parameters, Estimates)
+        TrialUpdates = SingleTrial(action, Parameters, Estimates, StateActionCount)
         TrialLikelihood[t] = TrialUpdates['likelihood']
         Estimates = TrialUpdates['Estimates']
+        StateActionCount = TrialUpdates['StateActionCount']
         
     LogLikelihood = sum(np.log(TrialLikelihood))
     
@@ -96,12 +100,12 @@ def OptimizeParameters(x):
     # Parameters.u_iti = x[3]
     # Parameters.omega = x[4]
     
-    Parameters.alpha_MB = x[0]
+    #Parameters.alpha_MB = x[0]
     Parameters.alpha_MF = x[0]
     Parameters.beta = x[1]
     Parameters.gamma = 1
-    Parameters.u_iti = x[2]
-    Parameters.omega = x[3]
+    Parameters.u_iti = 0.2
+    Parameters.omega = x[2]
     
     # Parameters.alpha = x[0]
     # Parameters.w_FMF = x[1]
@@ -121,10 +125,10 @@ def OptimizeParameters(x):
     InitialEstimates.V[F] = 1
     
     InitialEstimates.Q = np.zeros((n_states, n_actions))
-    #InitialEstimates.Q[state1, goM] = 0.5
+    InitialEstimates.Q[state1, goM] = 0.5
     InitialEstimates.T = np.zeros((n_states, n_actions, n_states))
     InitialEstimates.R = np.zeros((n_states, n_actions))
-
+    
     negative_LogLikelihood = -1 * LogLikelihood(rat_data, InitialEstimates, Parameters)
     
     return negative_LogLikelihood
@@ -154,11 +158,11 @@ n_rats = len(rats)
 
 
 #p = np.array([[0.2, 0.5, 0.8], [1, 2, 5], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8]]) # with gamma
-p = np.array([[0.05, 0.2, 0.5], [1, 2, 5], [0.05, 0.2, 0.5], [0.2, 0.5, 0.8]]) # without gamma 
+#p = np.array([[0.05, 0.2, 0.5], [1, 2, 5], [0.05, 0.2, 0.5], [0.2, 0.5, 0.8]]) # without gamma 
 #p = np.array([[0.2, 0.5, 0.8], [1, 2, 5], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8]]) # without gamma but with two weighting parameters
 #p = np.array([[0.2, 0.5, 0.8], [1, 2, 5], [1, 2, 5], [0.2, 0.5, 0.8]]) # without gamma and beta but with two weighting parameters
 #p = np.array([[0.2, 0.5, 0.8], [0.2, 0.5, 0.8], [1, 2, 5], [0.2, 0.5, 0.8], [0.2, 0.5, 0.8]]) # 2 learning rates, beta, u_iti and omega
-#p = np.array([0.2, 0.5, 0.8])
+p = np.array([[0.2, 0.5, 0.8], [1, 2, 5], [0.2, 0.5, 0.8]]) 
 
 #n_parameters = 1
 n_parameters = p.shape[0]
@@ -179,8 +183,8 @@ for index, rat in enumerate(rats):
     #result = optimize.minimize(OptimizeOmega, x0)
     
     
-    bnds = ((0,1), (0.001, 100), (0,1), (0,1))
-    # bnds = ((0,1), (0,1), (0, 100), (0,1), (0,1))
+    #bnds = ((0,1), (0.001, 100), (0,1), (0,1))
+    bnds = ((0,1), (0.001,100), (0,1))
     
     for i in range(3**n_parameters):
         x0 = np.zeros((n_parameters))
