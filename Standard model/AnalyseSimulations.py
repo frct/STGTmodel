@@ -10,15 +10,16 @@ import numpy as np
 import matplotlib as plt
 from scipy import stats
 
-model = '4 parameter'
+model = 'Omega only sessions4-5'
 
 data = np.load('Binary classification of data.npy')
+data = data[data[:,1]>3] # simulate sessions 4 and 5 only
 
 rats = np.unique(data[:,0])
 #rats = np.array([5])
 n_rats = len(rats)
 
-n_sessions = 5
+n_sessions = 2
 n_simulations = 100
 
 st_trials = np.zeros((n_rats, n_sessions))
@@ -40,7 +41,7 @@ for idx, rat in enumerate(rats):
         st_trials[idx, idy] = sum(session_data[:,3] == 1)
         gt_trials[idx, idy] = sum(session_data[:,3] == 2)
     
-    simulated_data = np.load(model + ' simulations/Rat' + str(int(rat)) + ' simulations.npy')
+    simulated_data = np.load(model + '/Rat' + str(int(rat)) + ' simulations.npy')
     
     n_simulations = len(simulated_data[0,:])
     

@@ -7,7 +7,7 @@ Created on Mon Aug 17 16:33:07 2020
 
 import numpy as np
 
-folder_path = 'two actions/no gamma two actions/Q=0.5 normal initialisation'
+folder_path = '4 parameters sessions 4-5'
 n_rats = 20
 n_parameters = 4
 

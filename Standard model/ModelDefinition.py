@@ -9,6 +9,18 @@ Created on Tue Jun  9 16:23:20 2020
 import numpy as np
 from TaskVariables import StatexAction_to_Feature, StatexAction_to_State, StatexAction_to_Reward, state5, state1, F
 
+class Parameters(object):
+    def __init__(self, alpha = 0.2, beta = 4., gamma = 1., u = 0.2, omega=0.2):
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
+        self.u = u
+        self.omega = omega
+        
+    def __repr__(self):
+        return "(alpha = %s, beta = %s, gamma = %s, u = %s, omega = %s)" %(self.alpha, self.beta, self.gamma, self.u, self.omega)
+
+
 def Feature(State, Action):
     """ returns feature for a given state and action """
     return int(StatexAction_to_Feature[State, Action])

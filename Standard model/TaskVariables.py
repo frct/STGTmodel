@@ -60,3 +60,12 @@ StatexAction_to_State = np.array([[state1,  a,  a,  a,  a],
 # mapping of state x action to reward: only eating in state 7 gives a reward
 StatexAction_to_Reward = np.zeros((n_states,n_actions))
 StatexAction_to_Reward[state5,eat] = 1.;
+
+class Estimates(object):
+    def __init__(self, n_features=4, n_states=6, n_actions=5):
+        self.V = np.zeros((n_features))
+        self.V[F] = 1.
+        self.Q = np.zeros((n_states, n_actions))
+        self.Q[state1, goM] = 0
+        self.T = np.zeros((n_states, n_actions, n_states))
+        self.R = np.zeros((n_states, n_actions))
